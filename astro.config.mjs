@@ -7,6 +7,7 @@ import remarkCallout from '@r4ai/remark-callout';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://shayaanzari.github.io',
   markdown: {
     // Wrap your existing configuration inside the processor
     processor: unified({

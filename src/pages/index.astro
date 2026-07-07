@@ -1,0 +1,35 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+interface Frontmatter {
+  title: string;
+  description?: string;
+  date: string;
+}
+
+// 1. Fetch all posts
+const posts = Object.values(
+  import.meta.glob<MarkdownInstance<Frontmatter>>('../pages/**/*.md', { eager: true })
+);
+
+/*
+console.log(posts[0].frontmatter);
+console.log(`Title: ${posts[0].frontmatter.title}`);
+console.log(posts[0].frontmatter.date);
+*/
+
+// 2. Sort posts by date, if desired
+posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.date));
+---
+
+<Layout frontmatter={{ title: "Notes Home" }}>
+  <h1>Recent Notes</h1>
+      <ul>
+        {posts.map(note => (
+          <li>
+            <a href={note.url}>{note.frontmatter.title}</a>
+            <span> — {note.frontmatter.date}</span>
+          </li>
+        ))}
+      </ul>
+    </Layout>

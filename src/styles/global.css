@@ -71,7 +71,7 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
   /* font-weight: 300; */ /* This doesn't do anything if the font doesn't have a 300-weight version. Georgia comes in Regular (400) and Bold (700). */
-  font-size: 2.6rem;
+  font-size: 3rem;
   margin-bottom: 5px;
 }
 
@@ -107,7 +107,7 @@ h4 {
 
 p {
   font-family: 'Cormorant Garamond', serif; /* Gelasio is open source version of Georgia. 'Cormorant Garamond', Garamond, serif; */
-  font-weight: 550;
+  font-weight: 500;
   font-size: 19px;
   color: #222222;
   margin-bottom: 1.1rem;

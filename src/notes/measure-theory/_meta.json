@@ -1,0 +1,32 @@
+{
+  "title": "A Course on Measure Theory",
+  "slug": "measure-theory",
+  "divisionLabel": "Part",
+  "description": "Foundations of measure, σ-algebras, outer measures, Lebesgue integration, and the convergence theorems.",
+  "sections": [
+    {
+      "id": "Prerequisites",
+      "numeral": "I",
+      "title": "Prerequisites & Foundations",
+      "description": "Topology of ℝⁿ, metric spaces, limits of sets, and preliminary real analysis."
+    },
+    {
+      "id": "Sigma-Algebras & Outer Measures",
+      "numeral": "II",
+      "title": "σ-Algebras & Outer Measures",
+      "description": "Algebras, σ-algebras, Borel sets, outer measures, and Carathéodory's extension theorem."
+    },
+    {
+      "id": "Measures & Lebesgue Measure",
+      "numeral": "III",
+      "title": "Measures & Lebesgue Measure",
+      "description": "Measure spaces, construction and regularity of Lebesgue measure, null sets, and Vitali sets."
+    },
+    {
+      "id": "Integration & Convergence",
+      "numeral": "IV",
+      "title": "Lebesgue Integration & Convergence Theorems",
+      "description": "Measurable functions, the Lebesgue integral, MCT, Fatou's Lemma, DCT, Egorov, Lusin, and Fubini–Tonelli."
+    }
+  ]
+}

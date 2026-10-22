@@ -1,0 +1,245 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import type { MarkdownInstance } from 'astro';
+
+interface Section {
+  id: string;
+  numeral: string;
+  title: string;
+  description?: string;
+}
+
+interface CollectionMeta {
+  title: string;
+  slug: string;
+  divisionLabel?: string;
+  description?: string;
+  sections?: Section[];
+}
+
+interface NoteFrontmatter {
+  title: string;
+  description?: string;
+  section?: string;
+  date?: string;
+  slug?: string;
+}
+
+export async function getStaticPaths() {
+  const metaModules = import.meta.glob<CollectionMeta | { default: CollectionMeta }>(
+    '../../notes/**/_meta.json',
+    { eager: true }
+  );
+
+  const allNotes = Object.values(
+    import.meta.glob<MarkdownInstance<NoteFrontmatter>>('../../notes/**/*.md', { eager: true })
+  );
+
+  return Object.entries(metaModules).map(([metaPath, module]) => {
+    const meta: CollectionMeta = 'default' in module ? (module as any).default : module;
+    
+    // Directory containing this _meta.json, e.g. "/notes/measure-theory/"
+    const dir = metaPath.replace(/_meta\.json$/, '');
+
+    // Filter notes that belong to this collection directory
+    const collectionNotes = allNotes.filter(n => n.file.includes(dir.replace('../../', '')));
+    
+    // Sort chronologically by filename (01-, 02-, ...)
+    collectionNotes.sort((a, b) => a.file.localeCompare(b.file));
+
+    return {
+      params: { collection: meta.slug },
+      props: { meta, notes: collectionNotes },
+    };
+  });
+}
+
+const { meta, notes } = Astro.props;
+
+const getSlug = (post: MarkdownInstance<NoteFrontmatter>) => {
+  if (post.frontmatter.slug) return post.frontmatter.slug;
+  const filename = post.file.split('/').pop()?.replace(/\.md$/, '') || '';
+  return filename.replace(/^\d+[-_]/, '');
+};
+
+const matchSection = (noteSection: string | undefined, sectionId: string) => {
+  if (!noteSection) return false;
+  const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return clean(noteSection).includes(clean(sectionId)) || clean(sectionId).includes(clean(noteSection));
+};
+
+const divisionLabel = meta.divisionLabel || "Part";
+---
+
+<Layout frontmatter={{ title: meta.title }}>
+  <nav class="breadcrumb">
+    <a href="/">← all notes</a>
+  </nav>
+
+  <header class="series-header">
+    <h1 class="series-title">{meta.title}</h1>
+    {meta.description && (
+      <p class="series-intro">{meta.description}</p>
+    )}
+  </header>
+
+  <div class="sections-container">
+    {meta.sections && meta.sections.map(section => {
+      const sectionNotes = notes.filter(n => matchSection(n.frontmatter.section, section.id));
+
+      return (
+        <section class="section-block">
+          <header class="section-header">
+            <span class="numeral">{divisionLabel} {section.numeral}</span>
+            <h2 class="section-title">{section.title}</h2>
+            {section.description && (
+              <p class="section-desc">{section.description}</p>
+            )}
+          </header>
+
+          {sectionNotes.length > 0 ? (
+            <ul class="notes-list">
+              {sectionNotes.map(note => (
+                <li class="note-item">
+                  <a href={`/${meta.slug}/${getSlug(note)}`} class="note-link">
+                    <span class="note-title">{note.frontmatter.title}</span>
+                    {note.frontmatter.date && (
+                      <span class="note-date">{note.frontmatter.date}</span>
+                    )}
+                  </a>
+                  {note.frontmatter.description && (
+                    <p class="note-summary">{note.frontmatter.description}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="empty-placeholder">Notes forthcoming.</p>
+          )}
+        </section>
+      );
+    })}
+  </div>
+</Layout>
+
+<style>
+  .breadcrumb {
+    font-family: Georgia, serif;
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .breadcrumb a {
+    color: #666666;
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    color: #008080;
+    text-decoration: underline;
+  }
+
+  .series-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eeeeee;
+  }
+
+  .series-title {
+    font-size: 2.6rem;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .series-intro {
+    font-size: 1.15rem;
+    color: #555555;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .sections-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .section-block {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px dashed #e8e8e8;
+  }
+
+  .section-block:last-child {
+    border-bottom: none;
+  }
+
+  .numeral {
+    font-family: Georgia, serif;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888888;
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .section-title {
+    font-size: 1.6rem;
+    margin: 0 0 0.3rem 0;
+    color: #222222;
+  }
+
+  .section-desc {
+    font-size: 0.95rem;
+    color: #666666;
+    font-style: italic;
+    margin: 0 0 1rem 0;
+  }
+
+  .notes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .note-item {
+    margin-bottom: 0.85rem;
+  }
+
+  .note-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    text-decoration: none;
+    color: #008080;
+    font-size: 1.15rem;
+  }
+
+  .note-link:hover .note-title {
+    text-decoration: underline;
+  }
+
+  .note-date {
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    color: #888888;
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  .note-summary {
+    font-size: 0.95rem;
+    color: #555555;
+    margin: 0.2rem 0 0 0;
+    line-height: 1.35;
+  }
+
+  .empty-placeholder {
+    font-family: Georgia, serif;
+    font-size: 0.9rem;
+    color: #999999;
+    font-style: italic;
+    margin: 0.5rem 0 0 0;
+  }
+</style>

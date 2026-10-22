@@ -1,35 +1,308 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import type { MarkdownInstance } from 'astro';
 
-interface Frontmatter {
+interface CollectionMeta {
   title: string;
+  slug: string;
+  divisionLabel?: string;
   description?: string;
-  date: string;
 }
 
-// 1. Fetch all posts
-const posts = Object.values(
-  import.meta.glob<MarkdownInstance<Frontmatter>>('../pages/**/*.md', { eager: true })
+interface NoteFrontmatter {
+  title: string;
+  description?: string;
+  date?: string;
+  section?: string;
+  draft?: boolean;
+  slug?: string;
+}
+
+interface EssayFrontmatter {
+  title: string;
+  description?: string;
+  date?: string;
+  draft?: boolean;
+}
+
+// 1. Auto-discover all Collections via _meta.json
+const metaModules = import.meta.glob<CollectionMeta | { default: CollectionMeta }>(
+  '../notes/**/_meta.json',
+  { eager: true }
 );
 
-/*
-console.log(posts[0].frontmatter);
-console.log(`Title: ${posts[0].frontmatter.title}`);
-console.log(posts[0].frontmatter.date);
-*/
+const allCollectionNotes = Object.values(
+  import.meta.glob<MarkdownInstance<NoteFrontmatter>>('../notes/**/*.md', { eager: true })
+).filter(n => !n.frontmatter.draft);
 
-// 2. Sort posts by date, if desired
-posts.sort((a, b) => Date.parse(b.frontmatter.date) - Date.parse(a.frontmatter.date));
+const getSlug = (post: MarkdownInstance<NoteFrontmatter>) => {
+  if (post.frontmatter.slug) return post.frontmatter.slug;
+  const filename = post.file.split('/').pop()?.replace(/\.md$/, '') || '';
+  return filename.replace(/^\d+[-_]/, '');
+};
+
+interface DiscoveredCollection {
+  name: string;
+  slug: string;
+  url: string;
+  count: number;
+}
+
+const collectionsList: DiscoveredCollection[] = [];
+const collectionNotesPool: Array<{
+  title: string;
+  description?: string;
+  date?: string;
+  url: string;
+  collectionName: string;
+  collectionUrl: string;
+  section?: string;
+}> = [];
+
+for (const [metaPath, module] of Object.entries(metaModules)) {
+  const meta: CollectionMeta = 'default' in module ? (module as any).default : module;
+  const dir = metaPath.replace(/_meta\.json$/, '');
+
+  const notes = allCollectionNotes.filter(n => n.file.includes(dir.replace('../', '')));
+
+  collectionsList.push({
+    name: meta.title,
+    slug: meta.slug,
+    url: `/${meta.slug}`,
+    count: notes.length,
+  });
+
+  for (const note of notes) {
+    collectionNotesPool.push({
+      title: note.frontmatter.title,
+      description: note.frontmatter.description,
+      date: note.frontmatter.date,
+      url: `/${meta.slug}/${getSlug(note)}`,
+      collectionName: meta.title,
+      collectionUrl: `/${meta.slug}`,
+      section: note.frontmatter.section,
+    });
+  }
+}
+
+// Sort collections alphabetically by name
+collectionsList.sort((a, b) => a.name.localeCompare(b.name));
+
+// 2. Standalone Essays in src/pages/
+const standalonePostsRaw = Object.values(
+  import.meta.glob<MarkdownInstance<EssayFrontmatter>>('../pages/**/*.md', { eager: true })
+).filter(p => !p.frontmatter.draft);
+
+const essays = standalonePostsRaw.map(p => ({
+  title: p.frontmatter.title,
+  description: p.frontmatter.description,
+  date: p.frontmatter.date,
+  url: p.url,
+  collectionName: null as string | null,
+  collectionUrl: null as string | null,
+  section: undefined as string | undefined,
+}));
+
+// Sort essays by date descending
+essays.sort((a, b) => {
+  const dateA = a.date ? Date.parse(a.date) : 0;
+  const dateB = b.date ? Date.parse(b.date) : 0;
+  return dateB - dateA;
+});
+
+// 3. Combine all pieces of writing to find the single latest entry
+const allWriting = [...essays, ...collectionNotesPool];
+allWriting.sort((a, b) => {
+  const dateA = a.date ? Date.parse(a.date) : 0;
+  const dateB = b.date ? Date.parse(b.date) : 0;
+  return dateB - dateA;
+});
+
+const latestNote = allWriting[0];
 ---
 
-<Layout frontmatter={{ title: "Notes Home" }}>
-  <h1>Recent Notes</h1>
-      <ul>
-        {posts.map(note => (
-          <li>
-            <a href={note.url}>{note.frontmatter.title}</a>
-            <span> — {note.frontmatter.date}</span>
+<Layout frontmatter={{ title: "Notes" }}>
+  {latestNote && (
+    <section class="latest-section">
+      <span class="label-eyebrow">Latest</span>
+      <h2 class="latest-title">
+        <a href={latestNote.url}>{latestNote.title}</a>
+      </h2>
+      <div class="latest-meta">
+        {latestNote.collectionName ? (
+          <>
+            <span>From <a href={latestNote.collectionUrl} class="series-ref">{latestNote.collectionName}</a></span>
+            {latestNote.section && <span> · {latestNote.section}</span>}
+          </>
+        ) : (
+          <span>Essay</span>
+        )}
+        {latestNote.date && <span> · {latestNote.date}</span>}
+      </div>
+      {latestNote.description && (
+        <p class="latest-desc">{latestNote.description}</p>
+      )}
+    </section>
+  )}
+
+  <hr class="section-divider" />
+
+  <div class="dual-columns">
+    <!-- Left Column: Collections (Auto-discovered) -->
+    <section class="col-series">
+      <h3 class="column-heading">Collections</h3>
+      <ul class="clean-list">
+        {collectionsList.map(c => (
+          <li class="series-item">
+            <a href={c.url} class="series-link">
+              <span class="name">{c.name}</span>
+              <span class="meta">{c.count} {c.count === 1 ? 'note' : 'notes'}</span>
+            </a>
           </li>
         ))}
       </ul>
-    </Layout>
+    </section>
+
+    <!-- Right Column: Essays (Standalone) -->
+    <section class="col-individual">
+      <h3 class="column-heading">Essays</h3>
+      <ul class="clean-list">
+        {essays.map(essay => (
+          <li class="note-item">
+            <a href={essay.url} class="note-link">
+              <span class="title">{essay.title}</span>
+              {essay.date && <span class="date">{essay.date}</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  /* --- Latest Spotlight --- */
+  .latest-section {
+    margin-top: 1.5rem;
+    margin-bottom: 2.25rem;
+  }
+
+  .label-eyebrow {
+    font-family: Georgia, serif;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888888;
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  .latest-title {
+    font-size: 2.1rem;
+    line-height: 1.2;
+    margin: 0 0 0.4rem 0;
+  }
+
+  .latest-title a {
+    color: #222222;
+    text-decoration: none;
+  }
+
+  .latest-title a:hover {
+    color: #008080;
+    text-decoration: underline;
+  }
+
+  .latest-meta {
+    font-family: Georgia, serif;
+    font-size: 0.95rem;
+    color: #777777;
+    font-style: italic;
+    margin-bottom: 0.85rem;
+  }
+
+  .latest-meta a.series-ref {
+    color: #008080;
+    text-decoration: none;
+  }
+
+  .latest-meta a.series-ref:hover {
+    text-decoration: underline;
+  }
+
+  .latest-desc {
+    font-size: 1.1rem;
+    color: #444444;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  /* --- Divider --- */
+  .section-divider {
+    border: none;
+    border-top: 1px solid #eeeeee;
+    margin: 0 0 2rem 0;
+  }
+
+  /* --- Dual Columns --- */
+  .dual-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
+
+  @media (max-width: 640px) {
+    .dual-columns {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+
+  .column-heading {
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888888;
+    font-weight: normal;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #eeeeee;
+  }
+
+  .clean-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .series-item,
+  .note-item {
+    margin-bottom: 0.85rem;
+  }
+
+  .series-link,
+  .note-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    text-decoration: none;
+    font-size: 1.15rem;
+    color: #008080;
+  }
+
+  .series-link:hover .name,
+  .note-link:hover .title {
+    text-decoration: underline;
+  }
+
+  .meta,
+  .date {
+    font-family: Georgia, serif;
+    font-size: 0.85rem;
+    color: #888888;
+    font-style: italic;
+    white-space: nowrap;
+  }
+</style>

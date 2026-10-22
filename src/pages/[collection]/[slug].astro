@@ -1,0 +1,181 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import type { MarkdownInstance } from 'astro';
+
+interface CollectionMeta {
+  title: string;
+  slug: string;
+  divisionLabel?: string;
+  description?: string;
+}
+
+interface NoteFrontmatter {
+  title: string;
+  description?: string;
+  section?: string;
+  date?: string;
+  slug?: string;
+}
+
+export async function getStaticPaths() {
+  const metaModules = import.meta.glob<CollectionMeta | { default: CollectionMeta }>(
+    '../../notes/**/_meta.json',
+    { eager: true }
+  );
+
+  const allNotes = Object.values(
+    import.meta.glob<MarkdownInstance<NoteFrontmatter>>('../../notes/**/*.md', { eager: true })
+  );
+
+  const getSlug = (post: MarkdownInstance<NoteFrontmatter>) => {
+    if (post.frontmatter.slug) return post.frontmatter.slug;
+    const filename = post.file.split('/').pop()?.replace(/\.md$/, '') || '';
+    return filename.replace(/^\d+[-_]/, '');
+  };
+
+  const paths = [];
+
+  for (const [metaPath, module] of Object.entries(metaModules)) {
+    const meta: CollectionMeta = 'default' in module ? (module as any).default : module;
+    const dir = metaPath.replace(/_meta\.json$/, '');
+
+    const collectionNotes = allNotes.filter(n => n.file.includes(dir.replace('../../', '')));
+    collectionNotes.sort((a, b) => a.file.localeCompare(b.file));
+
+    for (let i = 0; i < collectionNotes.length; i++) {
+      const post = collectionNotes[i];
+      const slug = getSlug(post);
+      const prevPost = i > 0 ? collectionNotes[i - 1] : null;
+      const nextPost = i < collectionNotes.length - 1 ? collectionNotes[i + 1] : null;
+
+      paths.push({
+        params: { collection: meta.slug, slug },
+        props: {
+          post,
+          meta,
+          prev: prevPost ? { title: prevPost.frontmatter.title, slug: getSlug(prevPost) } : null,
+          next: nextPost ? { title: nextPost.frontmatter.title, slug: getSlug(nextPost) } : null,
+        },
+      });
+    }
+  }
+
+  return paths;
+}
+
+const { post, meta, prev, next } = Astro.props;
+const { Content } = post;
+---
+
+<Layout frontmatter={post.frontmatter}>
+  <nav class="series-breadcrumb">
+    <a href="/">notes</a>
+    <span class="sep">/</span>
+    <a href={`/${meta.slug}`}>{meta.title.toLowerCase()}</a>
+    {post.frontmatter.section && (
+      <>
+        <span class="sep">/</span>
+        <span class="section-label">{post.frontmatter.section}</span>
+      </>
+    )}
+  </nav>
+
+  <article class="note-article">
+    <Content />
+  </article>
+
+  {(prev || next) && (
+    <nav class="series-nav">
+      <div class="nav-prev">
+        {prev && (
+          <a href={`/${meta.slug}/${prev.slug}`}>
+            <span class="nav-direction">← Previous</span>
+            <span class="nav-title">{prev.title}</span>
+          </a>
+        )}
+      </div>
+      <div class="nav-next">
+        {next && (
+          <a href={`/${meta.slug}/${next.slug}`}>
+            <span class="nav-direction">Next →</span>
+            <span class="nav-title">{next.title}</span>
+          </a>
+        )}
+      </div>
+    </nav>
+  )}
+</Layout>
+
+<style>
+  .series-breadcrumb {
+    font-family: Georgia, serif;
+    font-size: 0.9rem;
+    color: #888888;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .series-breadcrumb a {
+    color: #666666;
+    text-decoration: none;
+  }
+
+  .series-breadcrumb a:hover {
+    color: #008080;
+    text-decoration: underline;
+  }
+
+  .series-breadcrumb .sep {
+    margin: 0 0.4rem;
+    color: #bbbbbb;
+  }
+
+  .series-breadcrumb .section-label {
+    color: #444444;
+    font-style: italic;
+  }
+
+  .series-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e5e5;
+    font-family: Georgia, serif;
+  }
+
+  .nav-prev,
+  .nav-next {
+    flex: 1;
+  }
+
+  .nav-next {
+    text-align: right;
+  }
+
+  .series-nav a {
+    display: inline-flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: #222222;
+  }
+
+  .series-nav a:hover .nav-title {
+    color: #008080;
+    text-decoration: underline;
+  }
+
+  .nav-direction {
+    font-size: 0.8rem;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-title {
+    font-size: 1rem;
+    color: #008080;
+  }
+</style>

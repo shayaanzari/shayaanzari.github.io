@@ -3,6 +3,7 @@ title: "Metric Topology and Set-Theoretic Limits"
 description: "Foundational topology on ℝⁿ and limits of sets needed for measure theory"
 section: "Prerequisites"
 date: "2026-10-10"
+draft: true
 ---
 
 # Metric Topology & Set Limits

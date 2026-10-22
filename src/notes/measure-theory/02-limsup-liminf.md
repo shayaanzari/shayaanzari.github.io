@@ -3,6 +3,7 @@ title: "Limits Superior and Inferior"
 description: "A comprehensive treatment of sup, inf, and the equivalent formulations of limsup and liminf for sequences and sets."
 section: "Prerequisites"
 date: "2026-10-11"
+draft: true
 ---
 
 # Limits Superior and Inferior

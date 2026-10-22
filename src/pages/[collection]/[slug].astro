@@ -15,6 +15,7 @@ interface NoteFrontmatter {
   section?: string;
   date?: string;
   slug?: string;
+  draft?: boolean;
 }
 
 export async function getStaticPaths() {
@@ -25,7 +26,7 @@ export async function getStaticPaths() {
 
   const allNotes = Object.values(
     import.meta.glob<MarkdownInstance<NoteFrontmatter>>('../../notes/**/*.md', { eager: true })
-  );
+  ).filter(n => !n.frontmatter.draft);
 
   const getSlug = (post: MarkdownInstance<NoteFrontmatter>) => {
     if (post.frontmatter.slug) return post.frontmatter.slug;

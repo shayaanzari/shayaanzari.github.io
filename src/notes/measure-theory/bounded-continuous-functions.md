@@ -7,25 +7,19 @@ date: "2026-10-22"
 
 # Space of Bounded Continuous Functions is Banach
 
-> [!note] Why Functional Analysis in a Measure Theory Course?
-> If you are wondering why notes on measure theory begin with complete normed vector spaces and Cauchy sequences of functions, there is a deep structural motivation.
->
-> The classical Riemann integral suffers from a fatal deficiency: the space of Riemann-integrable functions is **incomplete** under integral norms (a sequence of Riemann-integrable functions can converge under an integral norm to something that fails to be Riemann-integrable). Modern analysis demands function spaces (like $L^1, L^2, L^p$) that are complete—spaces where every Cauchy sequence has a legitimate limit.
->
-> Measure theory and the Lebesgue integral exist precisely to construct these complete spaces. Before building Lebesgue measure from scratch, examining $(C_b(X), \lVert \cdot \rVert_\infty)$ gives us our first concrete, well-behaved model of a Banach space, contrasts pointwise versus uniform convergence, and previews the functional-analytic viewpoint that later underpins duality theorems (such as the Riesz–Markov–Kakutani representation theorem).
-
 Let $X$ be a *metric space*. The space of all bounded, continuous, *complex-valued* functions on $X$ is denoted:
 $$C_b(X) = \{f: X \to \mathbb{C} \mid f \text{ is continuous and } \sup_{x \in X} \vert{}f(x)\vert{} < \infty\}$$
 equipped with the *supremum norm*
 $$\Vert{}f\Vert{}_\infty = \sup_{x \in X} \vert{}f(x)\vert{}$$
-Notice that we have specified three additional things: a metric space, the codomain is a field ($\R$ or $\C$), and the supremum norm.
+
+Notice that we needed to specify three additional things beyond the title: the domain being a metric space, the codomain being a field ($\R$ or $\C$), and norm being the supremum norm.
 
 > [!abstract] Theorem: $(C_b(X),\lVert {}\cdot {}\rVert_\infty)$ is a Banach Space.
 
 Recall that a Banach space is a complete normed vector space.
 
 ## Part 1: Norm Axioms
-We show that $\lVert {}\cdot {}\rVert_\infty$ is a norm on $C_b(X)$. 
+We want to show that $\lVert {}\cdot {}\rVert_\infty$ is a norm on $C_b(X)$. 
 Suppose $f,g\in C_b(X)$.
 You can verify the three conditions:
 1. Positive definiteness: $\lVert f \rVert_\infty\ge0$, and zero norm implies $f=0$
@@ -82,6 +76,7 @@ Since $x$ was arbitrary, the result has been shown.
 Using the uniform bound from 2B, we show that $f\in C_b(X)$, i.e. we prove that $f$ is bounded (finite supremum norm) and continuous. 
 
 1. $f$ is bounded.
+
 Note that for any $\epsilon>0$, there exists $N\in\N$, such that for all $x\in X$ and $n\ge N$, we have that
 $$
 |f_n(x)-f(x)|\le \epsilon
@@ -101,4 +96,15 @@ $$
 By assumption, $f_{n_0}\in C_b(X)$ and thus is bounded with respect to the norm, i.e. $\lVert f_{n_0} \rVert<\infty$. Hence, $\epsilon+\lVert f_{n_0} \rVert<\infty$.
 
 2. $f$ is continuous.
+
 This one is a fun puzzle. Fix $x_0\in X$ and let $\epsilon>0$ be given. Hint: Since $f_n\in C_b(X)$, start by drawing a neighborhood around $x_0$ using the continuity of $f_n$.
+
+$\square{}$
+---
+
+> [!note] Why Functional Analysis in a Measure Theory Course?
+> If you are wondering why notes on measure theory begin with complete normed vector spaces and Cauchy sequences of functions, there is a deep structural motivation.
+>
+> The classical Riemann integral suffers from a fatal deficiency: the space of Riemann-integrable functions is **incomplete** under integral norms (a sequence of Riemann-integrable functions can converge under an integral norm to something that fails to be Riemann-integrable). Modern analysis demands function spaces (like $L^1, L^2, L^p$) that are complete—spaces where every Cauchy sequence has a legitimate limit.
+>
+> Measure theory and the Lebesgue integral exist precisely to construct these complete spaces. Before building Lebesgue measure from scratch, examining $(C_b(X), \lVert \cdot \rVert_\infty)$ gives us our first concrete, well-behaved model of a Banach space, contrasts pointwise versus uniform convergence, and previews the functional-analytic viewpoint that later underpins duality theorems (such as the Riesz–Markov–Kakutani representation theorem).
